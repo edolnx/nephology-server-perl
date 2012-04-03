@@ -1,0 +1,5 @@
+#!ipxe
+echo Nephology Bootstrap Loading
+kernel http://192.168.57.1/boot-images/vmlinuz-2.6.32-220.2.1.el6.x86_64 BOOTIF=${net0/mac} NEPHOLOGY_SERVER=<%= $srvip %> RESCUE_MODE=0 ramdisk_size=500000 root=/dev/ram
+initrd http://192.168.57.1/boot-images/centos6.cpio.gz
+boot
