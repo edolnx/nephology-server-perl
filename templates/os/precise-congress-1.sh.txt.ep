@@ -1,0 +1,382 @@
+#!/bin/bash
+
+failed()
+{
+  sleep 2 # Wait for the kernel to stop whining
+  umount /target/sys
+  umount /target/dev
+  umount /target/proc
+  umount /target/tmp
+  umount /target/var/tmp
+  umount /target/var
+  umount /target
+  rmdir /target
+  echo "Hrm, that didn't work.  Calling for help."
+  sudo ipmitool chassis identify force
+  echo "OS Install failed: ${1}"
+  while [ 1 ]; do sleep 10; done
+  exit 1;
+}
+
+# Mount!
+mkdir /target
+mount /dev/sda1 /target -t xfs
+mkdir /target/var /target/tmp
+mount /dev/sda5 /target/tmp -t xfs
+mount /dev/sda7 /target/var -t xfs
+mkdir /target/var/tmp
+mount /dev/sda6 /target/var/tmp -t xfs
+
+# UEFI Bootloader!
+#tar zxvf /root/efi-bootstrap.tar.gz -C /target/boot
+# Ubuntu!
+debootstrap --arch=amd64 --variant=minbase precise /target http://<%= $mirror_addr %>/ubuntu || failed "Unable to debootstrap"
+
+# Set the hostname
+echo <%= $db_node_info->{'hostname'} %> > /target/etc/hostname
+printf "domain <%= $db_node_info->{'domain'} %>\nsearch <%= $db_node_info->{'domain'} %>\nnameserver 8.8.8.8\nnameserver 8.8.4.4\n" > /target/etc/resolv.conf
+printf "<%= $db_node_info->{'primary_ip'} %> <%= $db_node_info->{'hostname'} %>.<%= $db_node_info->{'domain'} %> <%= $db_node_info->{'hostname'} %>\n" >> /target/etc/hosts
+
+# Bind Mounts!
+mount -o bind /proc /target/proc
+mount -o bind /dev /target/dev
+mount -o bind /sys /target/sys
+
+# Add fstab
+cat > /target/etc/fstab <<EOF
+# /etc/fstab: static file system information.
+#
+# Use 'blkid -o value -s UUID' to print the universally unique identifier
+# for a device; this may be used with UUID= as a more robust way to name
+# devices that works even if disks are added and removed. See fstab(5).
+#
+# <file system> <mount point>   <type>  <options>                               <dump>  <pass>
+proc            /proc           proc    nodev,noexec,nosuid                     0       0
+/dev/sda1       /               xfs     defaults,noatime                        0       1
+/dev/sda2       swap            swap    defaults                                0       0
+/dev/sda5       /tmp            xfs     defaults,noatime,nodev,nosuid,noexec    0       1
+/dev/sda7       /var            xfs     defaults,noatime,nodev,nosuid           0       1
+/dev/sda6       /var/tmp        xfs     defaults,noatime,nodev,nosuid,noexec    0       2
+EOF
+
+# Add selection files
+cat > /target/tmp/ubuntu-12.04-minimal.debconf <<EOF
+tzdata	tzdata/Zones/Australia	select	
+adduser	adduser/homedir-permission	boolean	true
+irqbalance	irqbalance/oneshot	boolean	false
+ucf	ucf/changeprompt	select	keep_current
+tzdata	tzdata/Zones/US	select	
+tasksel	tasksel/terminal	terminal	
+grub-pc	grub-pc/kopt_extracted	boolean	false
+grub-pc	grub2/kfreebsd_cmdline	string	
+libpam-runtime	libpam-runtime/override	boolean	false
+grub-pc	grub2/device_map_regenerated	note	
+ufw	ufw/existing_configuration	error	
+libpam0g:amd64	libpam0g/restart-services	string	
+resolvconf	resolvconf/downup-interfaces	note	
+tzdata	tzdata/Zones/Asia	select	
+libpam-runtime	libpam-runtime/profiles	multiselect	unix
+console-setup	console-setup/codeset47	select	. Combined - Latin; Slavic Cyrillic; Greek
+resolvconf	resolvconf/linkify-resolvconf	boolean	false
+tzdata	tzdata/Zones/Etc	select	UTC
+tasksel	tasksel/first	multiselect	OpenSSH server
+sysv-rc	sysv-rc/unable-to-convert	note	
+debconf	debconf/frontend	select	Dialog
+ca-certificates	ca-certificates/enable_crts	multiselect	cacert.org/cacert.org.crt, debconf.org/ca.crt, mozilla/ACEDICOM_Root.crt, mozilla/AC_Raíz_Certicámara_S.A..crt, mozilla/AddTrust_External_Root.crt, mozilla/AddTrust_Low-Value_Services_Root.crt, mozilla/AddTrust_Public_Services_Root.crt, mozilla/AddTrust_Qualified_Certificates_Root.crt, mozilla/AffirmTrust_Commercial.crt, mozilla/AffirmTrust_Networking.crt, mozilla/AffirmTrust_Premium.crt, mozilla/AffirmTrust_Premium_ECC.crt, mozilla/America_Online_Root_Certification_Authority_1.crt, mozilla/America_Online_Root_Certification_Authority_2.crt, mozilla/ApplicationCA_-_Japanese_Government.crt, mozilla/A-Trust-nQual-03.crt, mozilla/Autoridad_de_Certificacion_Firmaprofesional_CIF_A62634068.crt, mozilla/Baltimore_CyberTrust_Root.crt, mozilla/Buypass_Class_2_CA_1.crt, mozilla/Buypass_Class_3_CA_1.crt, mozilla/CA_Disig.crt, mozilla/Camerfirma_Chambers_of_Commerce_Root.crt, mozilla/Camerfirma_Global_Chambersign_Root.crt, mozilla/Certigna.crt, mozilla/Certinomis_-_Autorité_Racine.crt, mozilla/Certplus_Class_2_Primary_CA.crt, mozilla/certSIGN_ROOT_CA.crt, mozilla/Certum_Root_CA.crt, mozilla/Certum_Trusted_Network_CA.crt, mozilla/Chambers_of_Commerce_Root_-_2008.crt, mozilla/CNNIC_ROOT.crt, mozilla/Comodo_AAA_Services_root.crt, mozilla/COMODO_Certification_Authority.crt, mozilla/COMODO_ECC_Certification_Authority.crt, mozilla/Comodo_Secure_Services_root.crt, mozilla/Comodo_Trusted_Services_root.crt, mozilla/ComSign_CA.crt, mozilla/ComSign_Secured_CA.crt, mozilla/Cybertrust_Global_Root.crt, mozilla/Deutsche_Telekom_Root_CA_2.crt, mozilla/DigiCert_Assured_ID_Root_CA.crt, mozilla/DigiCert_Global_Root_CA.crt, mozilla/DigiCert_High_Assurance_EV_Root_CA.crt, mozilla/Digital_Signature_Trust_Co._Global_CA_1.crt, mozilla/Digital_Signature_Trust_Co._Global_CA_3.crt, mozilla/DST_ACES_CA_X6.crt, mozilla/DST_Root_CA_X3.crt, mozilla/EBG_Elektronik_Sertifika_Hizmet_Sağlayıcısı.crt, mozilla/E-Guven_Kok_Elektronik_Sertifika_Hizmet_Saglayicisi.crt, mozilla/Entrust.net_Premium_2048_Secure_Server_CA.crt, mozilla/Entrust.net_Secure_Server_CA.crt, mozilla/Entrust_Root_Certification_Authority.crt, mozilla/ePKI_Root_Certification_Authority.crt, mozilla/Equifax_Secure_CA.crt, mozilla/Equifax_Secure_eBusiness_CA_1.crt, mozilla/Equifax_Secure_eBusiness_CA_2.crt, mozilla/Equifax_Secure_Global_eBusiness_CA.crt, mozilla/Firmaprofesional_Root_CA.crt, mozilla/GeoTrust_Global_CA_2.crt, mozilla/GeoTrust_Global_CA.crt, mozilla/GeoTrust_Primary_Certification_Authority.crt, mozilla/GeoTrust_Primary_Certification_Authority_-_G2.crt, mozilla/GeoTrust_Primary_Certification_Authority_-_G3.crt, mozilla/GeoTrust_Universal_CA_2.crt, mozilla/GeoTrust_Universal_CA.crt, mozilla/Global_Chambersign_Root_-_2008.crt, mozilla/GlobalSign_Root_CA.crt, mozilla/GlobalSign_Root_CA_-_R2.crt, mozilla/GlobalSign_Root_CA_-_R3.crt, mozilla/Go_Daddy_Class_2_CA.crt, mozilla/Go_Daddy_Root_Certificate_Authority_-_G2.crt, mozilla/GTE_CyberTrust_Global_Root.crt, mozilla/Hongkong_Post_Root_CA_1.crt, mozilla/IGC_A.crt, mozilla/Izenpe.com.crt, mozilla/Juur-SK.crt, mozilla/Microsec_e-Szigno_Root_CA_2009.crt, mozilla/Microsec_e-Szigno_Root_CA.crt, mozilla/NetLock_Arany_=Class_Gold=_Főtanúsítvány.crt, mozilla/NetLock_Business_=Class_B=_Root.crt, mozilla/NetLock_Express_=Class_C=_Root.crt, mozilla/NetLock_Notary_=Class_A=_Root.crt, mozilla/NetLock_Qualified_=Class_QA=_Root.crt, mozilla/Network_Solutions_Certificate_Authority.crt, mozilla/OISTE_WISeKey_Global_Root_GA_CA.crt, mozilla/QuoVadis_Root_CA_2.crt, mozilla/QuoVadis_Root_CA_3.crt, mozilla/QuoVadis_Root_CA.crt, mozilla/Root_CA_Generalitat_Valenciana.crt, mozilla/RSA_Root_Certificate_1.crt, mozilla/RSA_Security_2048_v3.crt, mozilla/Secure_Global_CA.crt, mozilla/SecureSign_RootCA11.crt, mozilla/SecureTrust_CA.crt, mozilla/Security_Communication_EV_RootCA1.crt, mozilla/Security_Communication_Root_CA.crt, mozilla/Sonera_Class_1_Root_CA.crt, mozilla/Sonera_Class_2_Root_CA.crt, mozilla/Staat_der_Nederlanden_Root_CA.crt, mozilla/Staat_der_Nederlanden_Root_CA_-_G2.crt, mozilla/Starfield_Class_2_CA.crt, mozilla/Starfield_Root_Certificate_Authority_-_G2.crt, mozilla/Starfield_Services_Root_Certificate_Authority_-_G2.crt, mozilla/StartCom_Certification_Authority.crt, mozilla/S-TRUST_Authentication_and_Encryption_Root_CA_2005_PN.crt, mozilla/Swisscom_Root_CA_1.crt, mozilla/SwissSign_Gold_CA_-_G2.crt, mozilla/SwissSign_Platinum_CA_-_G2.crt, mozilla/SwissSign_Silver_CA_-_G2.crt, mozilla/Taiwan_GRCA.crt, mozilla/TC_TrustCenter_Class_2_CA_II.crt, mozilla/TC_TrustCenter_Class_3_CA_II.crt, mozilla/TC_TrustCenter__Germany__Class_2_CA.crt, mozilla/TC_TrustCenter__Germany__Class_3_CA.crt, mozilla/TC_TrustCenter_Universal_CA_I.crt, mozilla/TC_TrustCenter_Universal_CA_III.crt, mozilla/TDC_Internet_Root_CA.crt, mozilla/TDC_OCES_Root_CA.crt, mozilla/Thawte_Premium_Server_CA.crt, mozilla/thawte_Primary_Root_CA.crt, mozilla/thawte_Primary_Root_CA_-_G2.crt, mozilla/thawte_Primary_Root_CA_-_G3.crt, mozilla/Thawte_Server_CA.crt, mozilla/TÜBİTAK_UEKAE_Kök_Sertifika_Hizmet_Sağlayıcısı_-_Sürüm_3.crt, mozilla/TURKTRUST_Certificate_Services_Provider_Root_1.crt, mozilla/TURKTRUST_Certificate_Services_Provider_Root_2.crt, mozilla/TWCA_Root_Certification_Authority.crt, mozilla/UTN_DATACorp_SGC_Root_CA.crt, mozilla/UTN_USERFirst_Email_Root_CA.crt, mozilla/UTN_USERFirst_Hardware_Root_CA.crt, mozilla/ValiCert_Class_1_VA.crt, mozilla/ValiCert_Class_2_VA.crt, mozilla/Verisign_Class_1_Public_Primary_Certification_Authority.crt, mozilla/Verisign_Class_1_Public_Primary_Certification_Authority_-_G2.crt, mozilla/Verisign_Class_1_Public_Primary_Certification_Authority_-_G3.crt, mozilla/Verisign_Class_2_Public_Primary_Certification_Authority.crt, mozilla/Verisign_Class_2_Public_Primary_Certification_Authority_-_G2.crt, mozilla/Verisign_Class_2_Public_Primary_Certification_Authority_-_G3.crt, mozilla/Verisign_Class_3_Public_Primary_Certification_Authority.crt, mozilla/Verisign_Class_3_Public_Primary_Certification_Authority_-_G2.crt, mozilla/Verisign_Class_3_Public_Primary_Certification_Authority_-_G3.crt, mozilla/VeriSign_Class_3_Public_Primary_Certification_Authority_-_G4.crt, mozilla/VeriSign_Class_3_Public_Primary_Certification_Authority_-_G5.crt, mozilla/Verisign_Class_4_Public_Primary_Certification_Authority_-_G2.crt, mozilla/Verisign_Class_4_Public_Primary_Certification_Authority_-_G3.crt, mozilla/VeriSign_Universal_Root_Certification_Authority.crt, mozilla/Visa_eCommerce_Root.crt, mozilla/Wells_Fargo_Root_CA.crt, mozilla/WellsSecure_Public_Root_Certificate_Authority.crt, mozilla/XRamp_Global_CA_Root.crt, spi-inc.org/spi-ca-2003.crt, spi-inc.org/spi-cacert-2008.crt
+tasksel	tasksel/skip-tasks	string	
+ca-certificates	ca-certificates/new_crts	multiselect	
+tzdata	tzdata/Zones/SystemV	select	
+sysv-rc	sysv-rc/convert-legacy	boolean	true
+openssh-server	ssh/use_old_init_script	boolean	true
+keyboard-configuration	keyboard-configuration/modelcode	string	pc105
+ucf	ucf/conflicts_found	error	
+keyboard-configuration	keyboard-configuration/unsupported_config_options	boolean	true
+grub-pc	grub-pc/install_devices	multiselect	/dev/sda
+console-setup	console-setup/fontface47	select	Terminus
+openssh-server	ssh/vulnerable_host_keys	note	
+keyboard-configuration	keyboard-configuration/unsupported_config_layout	boolean	true
+memtest86+	shared/memtest86-run-lilo	boolean	false
+ufw	ufw/allow_custom_ports	string	
+keyboard-configuration	keyboard-configuration/toggle	select	No toggling
+grub-pc	grub-pc/postrm_purge_boot_grub	boolean	false
+console-setup	console-setup/fontsize-text47	select	16
+popularity-contest	popularity-contest/submiturls	string	
+keyboard-configuration	keyboard-configuration/compose	select	No compose key
+tzdata	tzdata/Zones/Arctic	select	
+keyboard-configuration	keyboard-configuration/layout	select	English (US)
+ntfs-3g	ntfs-3g/setuid-root	boolean	false
+keyboard-configuration	keyboard-configuration/xkb-keymap	select	us
+irqbalance	irqbalance/enable	boolean	true
+keyboard-configuration	keyboard-configuration/variant	select	English (US)
+tasksel	tasksel/tasks	multiselect	
+tzdata	tzdata/Zones/Pacific	select	
+keyboard-configuration	keyboard-configuration/switch	select	No temporary switch
+grub-pc	grub-pc/install_devices_failed_upgrade	boolean	true
+console-setup	console-setup/charmap47	select	UTF-8
+openssh-server	ssh/encrypted_host_key_but_no_keygen	note	
+popularity-contest	popularity-contest/participate	boolean	false
+tzdata	tzdata/Zones/Antarctica	select	
+keyboard-configuration	keyboard-configuration/unsupported_options	boolean	true
+libc6	glibc/upgrade	boolean	true
+libc6:amd64	glibc/upgrade	boolean	true
+grub-pc	grub2/linux_cmdline	string	
+oem-config	oem-config/steps	multiselect	language, timezone, keyboard, user, network, tasks
+debconf	debconf/priority	select	high
+keyboard-configuration	console-setup/detect	detect-keyboard	
+keyboard-configuration	console-setup/detected	note	
+landscape-common	landscape-common/sysinfo	select	Cache sysinfo in /etc/motd
+man-db	man-db/auto-update	boolean	true
+keyboard-configuration	keyboard-configuration/altgr	select	The default for the keyboard layout
+grub-pc	grub-pc/install_devices_empty	boolean	false
+libpam-runtime	libpam-runtime/conflicts	error	
+resolvconf	resolvconf/link-tail-to-original	boolean	false
+tzdata	tzdata/Zones/Europe	select	
+keyboard-configuration	keyboard-configuration/ctrl_alt_bksp	boolean	false
+libc6	glibc/restart-services	string	
+libc6:amd64	glibc/restart-services	string	
+libc6	libraries/restart-without-asking	boolean	false
+libc6:amd64	libraries/restart-without-asking	boolean	false
+libpam0g:amd64	libraries/restart-without-asking	boolean	false
+grub-pc	grub2/kfreebsd_cmdline_default	string	quiet
+ufw	ufw/enable	boolean	false
+console-setup	console-setup/codesetcode	string	Uni2
+libc6	glibc/disable-screensaver	error	
+libc6:amd64	glibc/disable-screensaver	error	
+libssl1.0.0:amd64	libssl1.0.0/restart-failed	error	
+resolvconf	resolvconf/reboot-recommended-after-removal	note	
+tzdata	tzdata/Zones/Africa	select	
+d-i	debian-installer/language	string	en
+grub-pc	grub-pc/install_devices_failed	boolean	false
+keyboard-configuration	keyboard-configuration/unsupported_layout	boolean	true
+tzdata	tzdata/Zones/America	select	
+keyboard-configuration	keyboard-configuration/variantcode	string	
+ca-certificates	ca-certificates/trust_new_crts	select	yes
+keyboard-configuration	keyboard-configuration/model	select	Generic 105-key (Intl) PC
+libpam0g:amd64	libpam0g/xdm-needs-restart	error	
+man-db	man-db/install-setuid	boolean	false
+libc6	glibc/restart-failed	error	
+libc6:amd64	glibc/restart-failed	error	
+keyboard-configuration	console-setup/ask_detect	boolean	false
+ucf	ucf/show_diff	note	
+dash	dash/sh	boolean	true
+d-i	debian-installer/country	string	US
+keyboard-configuration	keyboard-configuration/layoutcode	string	us
+apparmor	apparmor/homedirs	string	
+grub-pc	grub-pc/install_devices_disks_changed	multiselect	
+grub-pc	grub2/linux_cmdline_default	string	
+libpam0g:amd64	libpam0g/restart-failed	error	
+libssl1.0.0:amd64	libssl1.0.0/restart-services	string	
+openssh-server	ssh/disable_cr_auth	boolean	false
+grub-pc	grub-pc/chainload_from_menu.lst	boolean	true
+tzdata	tzdata/Areas	select	Etc
+console-setup	console-setup/store_defaults_in_debconf_db	boolean	true
+byobu	byobu/launch-by-default	boolean	false
+grub-pc	grub-pc/hidden_timeout	boolean	true
+tasksel	tasksel/force-tasks	string	server
+console-setup	console-setup/fontsize-fb47	select	16
+keyboard-configuration	keyboard-configuration/store_defaults_in_debconf_db	boolean	true
+tzdata	tzdata/Zones/Atlantic	select	
+tasksel	tasksel/desktop	multiselect	gnome
+grub-pc	grub-pc/mixed_legacy_and_grub2	boolean	true
+ntfs-3g	ntfs-3g/initramfs	boolean	true
+ucf	ucf/changeprompt_threeway	select	keep_current
+ufw	ufw/allow_known_ports	multiselect	
+libpam-modules	libpam-modules/disable-screensaver	error	
+keyboard-configuration	keyboard-configuration/optionscode	string	
+grub-pc	grub-pc/timeout	string	10
+console-setup	console-setup/fontsize	string	16
+libpam-runtime	libpam-runtime/no_profiles_chosen	error	
+tzdata	tzdata/Zones/Indian	select	
+tasksel	tasksel/limit-tasks	string	
+EOF
+
+# Setup Ubuntu repos
+cat > /target/etc/apt/sources.list <<EOF
+deb http://<%= $mirror_addr %>/ubuntu precise main restricted
+deb-src http://<%= $mirror_addr %>/ubuntu precise main restricted
+
+## Major bug fix updates produced after the final release of the
+## distribution.
+deb http://<%= $mirror_addr %>/ubuntu precise-updates main restricted
+deb-src http://<%= $mirror_addr %>/ubuntu precise-updates main restricted
+
+## N.B. software from this repository is ENTIRELY UNSUPPORTED by the Ubuntu
+## team. Also, please note that software in universe WILL NOT receive any
+## review or updates from the Ubuntu security team.
+deb http://<%= $mirror_addr %>/ubuntu precise universe
+deb-src http://<%= $mirror_addr %>/ubuntu precise universe
+deb http://<%= $mirror_addr %>/ubuntu precise-updates universe
+deb-src http://<%= $mirror_addr %>/ubuntu precise-updates universe
+
+## N.B. software from this repository is ENTIRELY UNSUPPORTED by the Ubuntu 
+## team, and may not be under a free licence. Please satisfy yourself as to 
+## your rights to use the software. Also, please note that software in 
+## multiverse WILL NOT receive any review or updates from the Ubuntu
+## security team.
+deb http://<%= $mirror_addr %>/ubuntu precise multiverse
+deb-src http://<%= $mirror_addr %>/ubuntu precise multiverse
+deb http://<%= $mirror_addr %>/ubuntu precise-updates multiverse
+deb-src http://<%= $mirror_addr %>/ubuntu precise-updates multiverse
+
+## Uncomment the following two lines to add software from the 'backports'
+## repository.
+## N.B. software from this repository may not have been tested as
+## extensively as that contained in the main release, although it includes
+## newer versions of some applications which may provide useful features.
+## Also, please note that software in backports WILL NOT receive any review
+## or updates from the Ubuntu security team.
+# deb http://<%= $mirror_addr %>/ubuntu precise-backports main restricted universe multiverse
+# deb-src http://<%= $mirror_addr %>/ubuntu precise-backports main restricted universe multiverse
+
+deb http://<%= $mirror_addr %>/security.ubuntu.com/ubuntu precise-security main restricted
+deb-src http://<%= $mirror_addr %>/security.ubuntu.com/ubuntu precise-security main restricted
+deb http://<%= $mirror_addr %>/security.ubuntu.com/ubuntu precise-security universe
+deb-src http://<%= $mirror_addr %>/security.ubuntu.com/ubuntu precise-security universe
+deb http://<%= $mirror_addr %>/security.ubuntu.com/ubuntu precise-security multiverse
+deb-src http://<%= $mirror_addr %>/security.ubuntu.com/ubuntu precise-security multiverse
+
+## Uncomment the following two lines to add software from Canonical's
+## 'partner' repository.
+## This software is not part of Ubuntu, but is offered by Canonical and the
+## respective vendors as a service to Ubuntu users.
+# deb http://archive.canonical.com/ubuntu precise partner
+# deb-src http://archive.canonical.com/ubuntu precise partner
+
+## Uncomment the following two lines to add software from Ubuntu's
+## 'extras' repository.
+## This software is not part of Ubuntu, but is offered by third-party
+## developers who want to ship their latest software.
+# deb http://extras.ubuntu.com/ubuntu precise main
+# deb-src http://extras.ubuntu.com/ubuntu precise main
+EOF
+
+# Set debconf selections
+echo "chef    chef/chef_server_url    string http://chef.dreamhost.com:4000" >> /target/tmp/dcs
+wget -O /target/tmp/opscode-keyring.gpg http://<%= $srv_addr %>/bootstrap/packages%40opscode.com.gpg
+
+# Put in a sane GRUB2 config
+cat > /target/tmp/grub-defaults <<EOF
+# If you change this file, run 'update-grub' afterwards to update
+# /boot/grub/grub.cfg.
+# For full documentation of the options in this file, see:
+#   info -f grub -n 'Simple configuration'
+
+GRUB_DEFAULT=0
+GRUB_HIDDEN_TIMEOUT=
+GRUB_HIDDEN_TIMEOUT_QUIET=true
+GRUB_TIMEOUT=5
+GRUB_DISTRIBUTOR=`lsb_release -i -s 2> /dev/null || echo Debian`
+GRUB_CMDLINE_LINUX_DEFAULT="nosplash"
+GRUB_CMDLINE_LINUX="console=tty1 console=ttyS0,115200n8"
+
+# Uncomment to enable BadRAM filtering, modify to suit your needs
+# This works with Linux (no patch required) and with any kernel that obtains
+# the memory map information from GRUB (GNU Mach, kernel of FreeBSD ...)
+#GRUB_BADRAM="0x01234567,0xfefefefe,0x89abcdef,0xefefefef"
+
+# Uncomment to disable graphical terminal (grub-pc only)
+GRUB_TERMINAL="console serial"
+GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1"
+
+# The resolution used on graphical terminal
+# note that you can use only modes which your graphic card supports via VBE
+# you can see them in real GRUB with the command 'vbeinfo'
+#GRUB_GFXMODE=640x480
+
+# Uncomment if you don't want GRUB to pass "root=UUID=xxx" parameter to Linux
+#GRUB_DISABLE_LINUX_UUID=true
+
+# Uncomment to disable generation of recovery mode menu entries
+#GRUB_DISABLE_RECOVERY="true"
+
+# Uncomment to get a beep at grub start
+#GRUB_INIT_TUNE="480 440 1"
+EOF
+
+# Build a post-install script and execute
+cat > /target/tmp/chroot.sh <<EOF
+#!/bin/bash
+#set -e
+
+failed()
+{
+  sleep 2 # Wait for the kernel to stop whining
+  echo "CHROOT Install failed: ${1}"
+  exit 1;
+}
+
+hostname <%= $db_node_info->{'hostname'} %>
+usermod -p <%= $db_node_info->{'admin_password_enc'} %> <%= $db_node_info->{'admin_user'} %> || failed "set admin password"
+echo "deb http://<%= $mirror_addr %>/apt.opscode.com precise-0.10 main" > /etc/apt/sources.list.d/ndn-opscode.list
+export DEBIAN_FRONTEND=noninteractive
+debconf-set-selections /tmp/ubuntu-12.04-minimal.debconf
+debconf-set-selections /tmp/dcs
+locale-gen en_US en_US.UTF-8
+dpkg-reconfigure locales
+apt-key update || failed "first update"
+apt-key add /tmp/opscode-keyring.gpg || failed "add opscode key"
+apt-get update || failed "second update"
+apt-get upgrade -y 
+apt-get install -y ubuntu-minimal
+apt-get upgrade -y
+apt-get install -y openssh-server opscode-keyring chef vim sudo xfsprogs wget ifenslave ntp || failed "packages"
+service chef-client stop
+/etc/init.d/ssh stop
+wget -O /etc/chef/validation.pem http://<%= $srv_addr %>/bootstrap/chef.dreamhost.com-validation.pem || failed "validation pem"
+apt-get install -y linux-image grub-pc 
+cp /tmp/grub-defaults /etc/default/grub
+update-grub
+grub-install '(hd0)'
+exit 0
+EOF
+chmod 755 /target/tmp/chroot.sh
+chroot /target /tmp/chroot.sh || failed "chroot script did not complete"
+rm /target/tmp/*
+
+if [ -c /dev/ttyS0 ]; then 
+cat > /target/etc/init/ttyS0.conf <<EOF
+# ttyS0 - getty
+#
+# This service maintains a getty on ttyS0 from the point the system is
+# started until it is shut down again.
+
+start on stopped rc or RUNLEVEL=[2345]
+stop on runlevel [!2345]
+
+respawn
+exec /sbin/getty -L 115200 ttyS0 vt102
+EOF
+
+fi
+
+if [ -c /dev/ttyS1 ]; then 
+cat > /target/etc/init/ttyS1.conf <<EOF
+# ttyS1 - getty
+#
+# This service maintains a getty on ttyS0 from the point the system is
+# started until it is shut down again.
+
+start on stopped rc or RUNLEVEL=[2345]
+stop on runlevel [!2345]
+
+respawn
+exec /sbin/getty -L 115200 ttyS1 vt102
+EOF
+
+fi
+
+if [ -c /dev/ttyS2 ]; then 
+cat > /target/etc/init/ttyS1.conf <<EOF
+# ttyS2 - getty
+#
+# This service maintains a getty on ttyS0 from the point the system is
+# started until it is shut down again.
+
+start on stopped rc or RUNLEVEL=[2345]
+stop on runlevel [!2345]
+
+respawn
+exec /sbin/getty -L 115200 ttyS2 vt102
+EOF
+
+fi
