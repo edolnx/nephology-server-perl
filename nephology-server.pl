@@ -2,6 +2,7 @@
 
 use strict;
 use Mojolicious::Lite;
+use Mojo::IOLoop;
 use DBI;
 use YAML;
 use JSON;
@@ -14,6 +15,15 @@ my $db = Nephology::DB->new;
 my $dbh = $db->dbh or die $db->error;
 my @salt = ( '.', '/', 0 .. 9, 'A' .. 'Z', 'a' .. 'z' );
 
+if (!defined($dbh)) {
+    die "Unable to connect to database";
+}
+
+Mojo::IOLoop->recurring( 60 => sub {
+    my $sth = $dbh->prepare("SELECT 1 WHERE 1=1");
+    $sth->execute or die "Database went away, try again"
+                         });
+
 # uses global @salt to construct salt string of requested length
 sub gensalt {
     my $count = shift;
@@ -24,10 +34,6 @@ sub gensalt {
     }
 
     return $salt;
-}
-
-if (!defined($dbh)) {
-    die "Unable to connect to database";
 }
 
 get '/' => sub {
