@@ -2,6 +2,7 @@
 
 use strict;
 use Mojolicious::Lite;
+use Mojo::IOLoop;
 use DBI;
 use YAML;
 use JSON;
@@ -14,6 +15,15 @@ my $db = Nephology::DB->new;
 my $dbh = $db->dbh or die $db->error;
 my @salt = ( '.', '/', 0 .. 9, 'A' .. 'Z', 'a' .. 'z' );
 
+if (!defined($dbh)) {
+    die "Unable to connect to database";
+}
+
+Mojo::IOLoop->recurring( 60 => sub {
+    my $sth = $dbh->prepare("SELECT 1");
+    $sth->execute or die "Database went away, try again"
+                         });
+
 # uses global @salt to construct salt string of requested length
 sub gensalt {
     my $count = shift;
@@ -24,10 +34,6 @@ sub gensalt {
     }
 
     return $salt;
-}
-
-if (!defined($dbh)) {
-    die "Unable to connect to database";
 }
 
 get '/' => sub {
@@ -46,13 +52,26 @@ get '/boot/:machine' => sub {
     else {
         my $db_node_info = $dbh->selectrow_hashref("SELECT * FROM node WHERE boot_mac='$machine'");
         if (!defined($db_node_info)) {
+            # If the node does not exist, go into bootstrap mode
             $self->render(template => "boot/bootstrap.ipxe", format => 'txt');
-        }
-        elsif ($db_node_info->{'status_id'} == 1000) {
-            $self->render(template => "boot/localboot.ipxe", format => 'txt');
         }
         else {
-            $self->render(template => "boot/bootstrap.ipxe", format => 'txt');
+            # Since the node exists, check it's status for for what action to perform
+            my $db_node_status_info = $dbh->selectrow_hashref("SELECT * FROM node_status WHERE status_id=" . $db_node_info->{'status_id'});
+            if (defined($db_node_status_info)) {
+                # If a status is defined, use it's information
+                if (defined($db_node_status_info->{'next_status'})) {
+                    # Change node status
+                    my $sth = $dbh->prepare("UPDATE node SET status_id=" . $db_node_status_info->{'next_status'} . " WHERE id=" . $db_node_info->{'id'});
+                    $sth->execute or $self->render(text => "Unable to update node [$machine]", status => 500);
+                }
+                # Send back the template defined by the status information
+                $self->render(template => 'boot/' . $db_node_status_info->{'template'}, format => 'txt');
+            }
+            else {
+                # There was no status information found, so abort
+                $self->render(text => "Unable to find information for this node status", status => 404);
+            }
         }
     }
 };
@@ -103,7 +122,7 @@ get '/install/:machine/:rule' => sub {
             $self->render(text => $data);
         }
         elsif ($db_rule_info->{'type_id'} == 2) {
-            my $sth = $dbh->prepare("UPDATE node SET status_id=1000 WHERE id=" . $db_node_info->{'id'});
+            my $sth = $dbh->prepare("UPDATE node SET status_id=" . $db_rule_info->{'template'} . " WHERE id=" . $db_node_info->{'id'});
             $sth->execute or $self->render(text => "Unable to update node [$machine]", status => 500);
             $self->render(text => "Reboot rule [$rule] for [$machine] success!");
         }

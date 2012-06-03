@@ -1,0 +1,3 @@
+#!ipxe
+echo Nephology: Proceeding to Local Boot
+exit

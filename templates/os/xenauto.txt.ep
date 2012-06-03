@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<installation srtype="ext">
+  <primary-disk>sda</primary-disk>
+  <guest-disk>sdb</guest-disk>
+  <keymap>us</keymap>
+  <root-password><%= $db_node_info->{'admin_password'} %></root-password>
+  <source type="url">http://<%= $srvip %>/XenServer/</source>
+  <admin-interface name="eth0" proto="static">
+    <ip><%= $db_node_info->{'primary_ip'} %></ip>
+    <subnet-mask>255.255.128.0</subnet-mask>
+    <gateway>10.237.128.1</gateway>
+  </admin-interface>
+  <timezone>UTC</timezone>
+  <nameserver>8.8.8.8</nameserver>
+  <hostname><%= $db_node_info->{'hostname'} %></hostname>
+</installation>

@@ -1,0 +1,6 @@
+#!ipxe
+echo XenServer Network Install
+kernel http://<%= $srvip %>/boot-images/xenserver/xen.gz dom0_max_vcpus=2 dom0_mem=752M com1=115200,8n1 console=com1,vga
+module http://<%= $srvip %>/boot-images/xenserver/vmlinuz xencons=hvc console=hvc0 console=tty0 answerfile=http://<%= $srvip %>/nephology/install/${net0/mac}/148 answerfiledevice=${net0/mac} install
+module http://<%= $srvip %>/boot-images/xenserver/install.img
+boot
