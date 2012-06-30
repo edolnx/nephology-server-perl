@@ -9,13 +9,13 @@ __PACKAGE__->use_private_registry;
 
 # Register your lone data source using the default type and domain
 __PACKAGE__->register_db(
-	domain   => Nephology::DB->default_domain,
-	type     => Nephology::DB->default_type,
-	driver   => 'mysql',
-	database => 'nephology2',
-	host     => 'localhost',
-	username => 'nephology',
-	password => 'vaporware',
+	domain   => NephologyServer::DB->default_domain,
+	type     => NephologyServer::DB->default_type,
+	driver   => '',
+	database => '',
+	host     => '',
+	username => '',
+	password => '',
 );
 
 1;
