@@ -1,13 +1,15 @@
-package Caste;
+package Nephology::NodeStatus;
 
 use strict;
-use NephologyServer::DB;
+use Rose::DB::Object;
+use Nephology::DB;
 
 use base qw(Rose::DB::Object);
 
+
 __PACKAGE__->meta->setup
 (
-	table => 'caste',
+	table => 'node_status',
 	columns => [
 		id => {
 			type        => 'int',
@@ -23,18 +25,16 @@ __PACKAGE__->meta->setup
 			type     => 'datetime',
 			not_null => 1,
 		},
-		description => {
+		template => {
 			type     => 'varchar',
-			length   => 200,
+			length   => 45,
 			not_null => 1,
 		},
-	],
-	relationships => [
-		caste_rule => {
-			type      => 'many to many',
-			map_class => 'MapCasteRule',
-		},
-	],
+		next_status => {
+			type => 'int',
+			length => 11,
+		}
+	]
 );
 
-sub init_db { NephologyServer::DB->new }
+sub init_db { Nephology::DB->new }
