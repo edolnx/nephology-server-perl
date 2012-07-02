@@ -1,11 +1,11 @@
-package Nephology::Install;
+package NephologyServer::Install;
 
 use File::Temp;
 use YAML;
 use Mojo::Base 'Mojolicious::Controller';
 
 use NephologyServer::DB;
-use NephologyServer::Node::Manager;
+use Node::Manager;
 
 
 use constant SALT => ( '.', '/', 0 .. 9, 'A' .. 'Z', 'a' .. 'z' );
@@ -45,8 +45,8 @@ sub set_rule {
 	my $MapCasteRules = MapCasteRule::Manager->get_map_caste_rules(
 		require_objects => ['caste_rule'],
 		query => [
-			caste_id => 1,
-			caste_rule_id => 1,
+			caste_id => $Node->caste_id,
+			caste_rule_id => $rule,
 		],
 		limit => 1,
 	);
@@ -86,9 +86,6 @@ sub set_rule {
 			my $data = $mt->render(
 					'templates/' . $CasteRule->template, $db_node_info, $db_rule_info
 			);
-			#if (system("perl $tmp_fn") > 0) {
-			#    $self->render(text => "Server side script error!", status => 500);
-			#}
 			$self->render(text => $data);
 		} elsif ($CasteRule->type_id == 2) {
 			$Node->status_id($CasteRule->template);
