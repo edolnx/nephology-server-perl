@@ -10,25 +10,34 @@ sub machine_creds {
 	my $self = shift;
 	my $machine = lc($self->stash("machine"));
 
-	my $Node = Node::Manager->get_nodes(
+	my $Nodes = Node::Manager->get_nodes(
 		query => [
 			boot_mac => $machine,
 		],
+		limit => 1,
 	);
+
+	my $Node = @$Nodes[0];
 	if (!ref $Node) {
-		my $Node = Node::Manager->get_nodes(
+		my $Nodes = Node::Manager->get_nodes(
 			query => [
 				asset_tag => $machine,
 			],
+			limit => 1,
 		);
+
+		$Node = @$Nodes[0];
 		if (!ref $Node) {
-			my $Node = Node::Manager->get_nodes(
+			my $Nodes = Node::Manager->get_nodes(
 				query => [
 					hostname => $machine,
 				],
+				limit => 1,
 			);
+
+			$Node = @$Nodes[0];
 			if (!ref $Node) {
-				$self->render(
+				return $self->render(
 					text   => "Node [$machine] not found",
 					status => 404,
 				);

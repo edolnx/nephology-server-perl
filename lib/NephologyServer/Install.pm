@@ -19,7 +19,7 @@ sub set_rule {
 
 
 	my $Config = YAML::LoadFile("../nephology.yaml") ||
-		$self->render(
+		return $self->render(
 			text   => 'Unable to load config file',
 			format => 'txt',
 		
@@ -28,19 +28,21 @@ sub set_rule {
 	$self->stash("srv_addr" => $Config->{'server_addr'});
 	$self->stash("mirror_addr" => $Config->{'mirror_addr'});
 
-	my $Node = Node::Manager->get_nodes(
+	my $Nodes = Node::Manager->get_nodes(
 		query => [
 			boot_mac => $machine,
 		],
+		limit => 1,
 	);
 
-	unless (!$Node) {
-		$self->render(
+	my $Node = @$Nodes[0];
+	if (!ref $Node) {
+		return $self->render(
 			text   => "Node [$machine] not found",
 			status => 404,
 		);
 	}
-	$Node->{'admin_password_enc'} = crypt($Node->{'admin_password'}, _gen_salt(2));
+	$Node->admin_password_enc(crypt($Node->{'admin_password'}, _gen_salt(2)));
 	# Make sure the requested rule is mapped to this machine before returning it
 
 
@@ -60,7 +62,7 @@ sub set_rule {
 			if ($CasteRule->template) {
 				$self->stash("db_rule_info" => $CasteRule);
 				$self->stash("db_node_info" => $Node);
-				$self->render(
+				return $self->render(
 					template => $CasteRule->template,
 					format   => 'txt'
 				);
@@ -69,7 +71,7 @@ sub set_rule {
 			}
 		} elsif ($CasteRule->type_id == 3) {
 			unless ($CasteRule->template) {
-				$self->render(
+				return $self->render(
 					text   => "Rule [$rule] for [$machine] template not specified",
 					status => 404
 				);
@@ -79,7 +81,7 @@ sub set_rule {
 			my $tmp_fn = $tmp->filename;
 			my $mt = Mojo::Template->new();
 			if (! -f "templates/" . $CasteRule->template) {
-				$self->render(
+				return $self->render(
 					text   => "Rule [$rule] for [$machine] template not found",
 					status => 404
 				);
@@ -88,25 +90,25 @@ sub set_rule {
 			my $data = $mt->render(
 					'templates/' . $CasteRule->template, $Node, $CasteRule
 			);
-			$self->render(text => $data);
+			return $self->render(text => $data);
 		} elsif ($CasteRule->type_id == 2) {
 			$Node->status_id($CasteRule->template);
 			$Node->save() ||
-				$self->render(
+				return $self->render(
 					text   => "Unable to update node [$machine]",
 					status => 500
 				);
-			$self->render(
+			return $self->render(
 				text => "Reboot rule [$rule] for [$machine] success!"
 			);
 		} else {
-			$self->render(
+			return $self->render(
 				text   => "OMGWTFBBQ",
 				status => 500
 			);
 		}
 	} else {
-		$self->render(
+		return $self->render(
 			text   => "Rule [$rule] not valid for [$machine]",
 			status => 403
 		);
@@ -117,14 +119,16 @@ sub install_machine {
 	my $self = shift;
 	my $machine = $self->stash("machine");
 
-	my $Node = NephologyServer::Node::Manager->get_node(
+	my $Nodes = NephologyServer::Node::Manager->get_node(
 		query => [
 			boot_mac => $machine,
 		],
+		limit => 1,
 	);
 
-	unless (ref $Node) {
-		$self->render(
+	my $Node = @$Nodes[0];
+	if (!ref $Node) {
+		return $self->render(
 			text => "Node [$machine] not found",
 			status => 404
 		);
@@ -150,7 +154,7 @@ sub install_machine {
 	};
 
 	$self->render(json => $install_list);
-};
+}
 
 # uses global @salt to construct salt string of requested length
 sub _gen_salt {
