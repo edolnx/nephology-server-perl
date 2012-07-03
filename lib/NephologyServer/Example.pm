@@ -1,5 +1,6 @@
 package NephologyServer::Example;
 
+use strict;
 use Mojo::Base 'Mojolicious::Controller';
 
 sub welcome {
