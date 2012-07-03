@@ -43,7 +43,7 @@ sub lookup_machine {
 			# Since the node exists, check it's status for for what action to perform
 			my $NodeStatus = NodeStatus::Manager->get_node_status(
 				query => [
-					status_id => $Node->status_id,
+					id => $Node->status_id,
 				]
 			);
 			if ($NodeStatus && $NodeStatus->next_status) {
