@@ -5,13 +5,14 @@ use Mojo::Base 'Mojolicious::Controller';
 use YAML;
 
 use Node::Manager;
+use NephologyServer::Check;
 use NodeStatus::Manager;
-
 
 # Find the boot script, right now only returns the default or rescue iPXE script
 sub lookup_machine {
 	my $self = shift;
-	my $machine = $self->stash('machine');
+	my $boot_mac = $self->stash('boot_mac');
+
 
 	my $Config = YAML::LoadFile('../nephology.yaml') ||
 		return $self->render(
@@ -20,7 +21,7 @@ sub lookup_machine {
 		);
 
 	$self->stash("srvip" => $Config->{'server_addr'});
-	if ($machine eq "rescue") {
+	if ($boot_mac eq "rescue") {
 		return $self->render(
 			template => "boot/rescue.ipxe",
 			format   => 'txt',
@@ -28,7 +29,7 @@ sub lookup_machine {
 	} else {
 		my $Nodes = Node::Manager->get_nodes(
 			query => [
-				boot_mac => $machine,
+				boot_mac => $boot_mac,
 			],
 			limit => 1,
 		);
@@ -52,7 +53,7 @@ sub lookup_machine {
 				$Node->status_id($NodeStatus->next_status);
 				$Node->save() ||
 					return $self->render(
-						text   => "Unable to update node [$machine]",
+						text   => "Unable to update node [$boot_mac]",
 						status => 500,
 					);
 

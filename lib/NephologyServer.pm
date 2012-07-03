@@ -14,23 +14,23 @@ sub startup {
 	);
 
 	# Boot
-	$r->get('/boot/:machine')->to(
+	$r->get('/boot/:boot_mac')->to(
 		controller => 'boot',
 		action     => 'lookup_machine',
 	);
 
 	# Install
-	$r->get('/install/:machine/:rule')->to(
+	$r->get('/install/:boot_mac/:rule')->to(
 		controller => 'install',
 		action     => 'set_rule',
 	);
-	$r->get('/install/:machine')->to(
+	$r->get('/install/:boot_mac')->to(
 		controller => 'install',
 		action     => 'install_machine',
 	);
 
 	# Creds
-	$r->get('/creds/:machine')->to(
+	$r->get('/creds/:boot_mac')->to(
 		controller => 'creds',
 		action     => 'machine_creds',
 	);

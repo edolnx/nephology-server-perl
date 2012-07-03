@@ -8,11 +8,11 @@ use Mojo::Base 'Mojolicious::Controller';
 
 sub machine_creds {
 	my $self = shift;
-	my $machine = lc($self->stash("machine"));
+	my $boot_mac = lc($self->stash("boot_mac"));
 
 	my $Nodes = Node::Manager->get_nodes(
 		query => [
-			boot_mac => $machine,
+			boot_mac => $boot_mac,
 		],
 		limit => 1,
 	);
@@ -21,7 +21,7 @@ sub machine_creds {
 	if (!ref $Node) {
 		my $Nodes = Node::Manager->get_nodes(
 			query => [
-				asset_tag => $machine,
+				asset_tag => $boot_mac,
 			],
 			limit => 1,
 		);
@@ -30,7 +30,7 @@ sub machine_creds {
 		if (!ref $Node) {
 			my $Nodes = Node::Manager->get_nodes(
 				query => [
-					hostname => $machine,
+					hostname => $boot_mac,
 				],
 				limit => 1,
 			);
@@ -38,7 +38,7 @@ sub machine_creds {
 			$Node = @$Nodes[0];
 			if (!ref $Node) {
 				return $self->render(
-					text   => "Node [$machine] not found",
+					text   => "Node [$boot_mac] not found",
 					status => 404,
 				);
 			}
