@@ -9,7 +9,7 @@ use NephologyServer::DB;
 use Node::Manager;
 
 
-use constant SALT => ( '.', '/', 0 .. 9, 'A' .. 'Z', 'a' .. 'z' );
+my @salt = ( '.', '/', 0 .. 9, 'A' .. 'Z', 'a' .. 'z' );
 
 
 sub set_rule {
@@ -17,17 +17,18 @@ sub set_rule {
 	my $machine = $self->stash("machine");
 	my $rule = $self->stash("rule");
 
-	$self->stash("srv_addr" => $Config->{'server_addr'});
-	$self->stash("mirror_addr" => $Config->{'mirror_addr'});
 
-	my $Config = YAML::LoadFile("../../nephology.yaml") ||
+	my $Config = YAML::LoadFile("../nephology.yaml") ||
 		$self->render(
 			text   => 'Unable to load config file',
 			format => 'txt',
 		
 		);
 
-	my $Node = NephologyServer::Node::Manager->get_node(
+	$self->stash("srv_addr" => $Config->{'server_addr'});
+	$self->stash("mirror_addr" => $Config->{'mirror_addr'});
+
+	my $Node = Node::Manager->get_nodes(
 		query => [
 			boot_mac => $machine,
 		],
@@ -64,7 +65,7 @@ sub set_rule {
 					format   => 'txt'
 				);
 			} else {
-				$self->redirect_to("http://" . $config->{'server_addr'} . $CasteRule->url);
+				$self->redirect_to("http://" . $Config->{'server_addr'} . $CasteRule->url);
 			}
 		} elsif ($CasteRule->type_id == 3) {
 			unless ($CasteRule->template) {
@@ -85,7 +86,7 @@ sub set_rule {
 			}
 
 			my $data = $mt->render(
-					'templates/' . $CasteRule->template, $db_node_info, $db_rule_info
+					'templates/' . $CasteRule->template, $Node, $CasteRule
 			);
 			$self->render(text => $data);
 		} elsif ($CasteRule->type_id == 2) {
@@ -139,7 +140,7 @@ sub install_machine {
 
 
 	my @rule_list;
-	for my $MapCasteRule (@$MapCasteRule) {
+	for my $MapCasteRule (@$MapCasteRules) {
 		push(@rule_list, $MapCasteRule->caste_rule);
 	}
 
@@ -157,7 +158,7 @@ sub _gen_salt {
 
 	my $salt;
 	for (1..$count) {
-		$salt .= (SALT)[rand @salt];
+		$salt .= (@salt)[rand @salt];
 	}
 
 	return $salt;
