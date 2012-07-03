@@ -2,6 +2,7 @@
 use strict;
 
 use Mojo::Base -strict;
+use Mojolicious::Commands;
 
 use File::Basename 'dirname';
 use File::Spec;
