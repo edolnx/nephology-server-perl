@@ -14,7 +14,7 @@ my @salt = ( '.', '/', 0 .. 9, 'A' .. 'Z', 'a' .. 'z' );
 
 sub set_rule {
 	my $self = shift;
-	my $machine = $self->stash("machine");
+	my $boot_mac = $self->stash("boot_mac");
 	my $rule = $self->stash("rule");
 
 
@@ -30,7 +30,7 @@ sub set_rule {
 
 	my $Nodes = Node::Manager->get_nodes(
 		query => [
-			boot_mac => $machine,
+			boot_mac => $boot_mac,
 		],
 		limit => 1,
 	);
@@ -38,7 +38,7 @@ sub set_rule {
 	my $Node = @$Nodes[0];
 	if (!ref $Node) {
 		return $self->render(
-			text   => "Node [$machine] not found",
+			text   => "Node [$boot_mac] not found",
 			status => 404,
 		);
 	}
@@ -72,7 +72,7 @@ sub set_rule {
 		} elsif ($CasteRule->type_id == 3) {
 			unless ($CasteRule->template) {
 				return $self->render(
-					text   => "Rule [$rule] for [$machine] template not specified",
+					text   => "Rule [$rule] for [$boot_mac] template not specified",
 					status => 404
 				);
 			}
@@ -82,7 +82,7 @@ sub set_rule {
 			my $mt = Mojo::Template->new();
 			if (! -f "templates/" . $CasteRule->template) {
 				return $self->render(
-					text   => "Rule [$rule] for [$machine] template not found",
+					text   => "Rule [$rule] for [$boot_mac] template not found",
 					status => 404
 				);
 			}
@@ -95,11 +95,11 @@ sub set_rule {
 			$Node->status_id($CasteRule->template);
 			$Node->save() ||
 				return $self->render(
-					text   => "Unable to update node [$machine]",
+					text   => "Unable to update node [$boot_mac]",
 					status => 500
 				);
 			return $self->render(
-				text => "Reboot rule [$rule] for [$machine] success!"
+				text => "Reboot rule [$rule] for [$boot_mac] success!"
 			);
 		} else {
 			return $self->render(
@@ -109,7 +109,7 @@ sub set_rule {
 		}
 	} else {
 		return $self->render(
-			text   => "Rule [$rule] not valid for [$machine]",
+			text   => "Rule [$rule] not valid for [$boot_mac]",
 			status => 403
 		);
 	}
@@ -117,11 +117,11 @@ sub set_rule {
 
 sub install_machine {
 	my $self = shift;
-	my $machine = $self->stash("machine");
+	my $boot_mac = $self->stash("boot_mac");
 
 	my $Nodes = NephologyServer::Node::Manager->get_node(
 		query => [
-			boot_mac => $machine,
+			boot_mac => $boot_mac,
 		],
 		limit => 1,
 	);
@@ -129,7 +129,7 @@ sub install_machine {
 	my $Node = @$Nodes[0];
 	if (!ref $Node) {
 		return $self->render(
-			text => "Node [$machine] not found",
+			text => "Node [$boot_mac] not found",
 			status => 404
 		);
 	}
