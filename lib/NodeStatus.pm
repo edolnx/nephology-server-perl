@@ -1,8 +1,8 @@
-package Nephology::NodeStatus;
+package NodeStatus;
 
 use strict;
 use Rose::DB::Object;
-use Nephology::DB;
+use NephologyServer::DB;
 
 use base qw(Rose::DB::Object);
 

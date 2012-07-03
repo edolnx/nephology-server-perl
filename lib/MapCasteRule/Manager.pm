@@ -1,5 +1,6 @@
 package MapCasteRule::Manager;
 
+use strict;
 use Rose::DB::Object::Manager;
 use base 'Rose::DB::Object::Manager';
 

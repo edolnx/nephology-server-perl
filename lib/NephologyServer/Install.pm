@@ -1,5 +1,6 @@
 package NephologyServer::Install;
 
+use strict;
 use File::Temp;
 use YAML;
 use Mojo::Base 'Mojolicious::Controller';
@@ -50,7 +51,7 @@ sub set_rule {
 		],
 		limit => 1,
 	);
-	my $CasteRule = @$MapCasteRules[0]->caste_rule
+	my $CasteRule = @$MapCasteRules[0]->caste_rule;
 	if (ref $CasteRule) {
 		if ($CasteRule->type_id == 1 or $CasteRule->type_id == 4) {
 			# Client script or client root script
