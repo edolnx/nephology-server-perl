@@ -37,4 +37,4 @@ __PACKAGE__->meta->setup
 	]
 );
 
-sub init_db { Nephology::DB->new }
+sub init_db { NephologyServer::DB->new }
