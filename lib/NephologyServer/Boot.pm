@@ -14,11 +14,11 @@ sub lookup_machine {
 	my $machine = $self->stash('machine');
 	$self->render(text => $machine);
 
-	my $Config = YAML::LoadFile('nephology.yaml') ||
+	my $Config = YAML::LoadFile('../nephology.yaml') ||
 		$self->render(
 			text   => 'Unable to find config file',
 			format => 'txt',
-		)
+		);
 
 	$self->stash("srvip" => $Config->{'server_addr'});
 	if ($machine eq "rescue") {
@@ -33,7 +33,7 @@ sub lookup_machine {
 			]
 		);
 
-		if (!$Nodes) {
+		if (!$Node) {
 			# If the node does not exist, go into bootstrap mode
 			$self->render(
 				template => "boot/bootstrap.ipxe",
@@ -48,7 +48,7 @@ sub lookup_machine {
 			);
 			if ($NodeStatus && $NodeStatus->next_status) {
 				# Change node status
-				$Node->status_id($NodeStatus->next_status)
+				$Node->status_id($NodeStatus->next_status);
 				$Node->save() ||
 					$self->render(
 						text   => "Unable to update node [$machine]",
