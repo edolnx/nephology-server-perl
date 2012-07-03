@@ -12,30 +12,31 @@ use NodeStatus::Manager;
 sub lookup_machine {
 	my $self = shift;
 	my $machine = $self->stash('machine');
-	$self->render(text => $machine);
 
 	my $Config = YAML::LoadFile('../nephology.yaml') ||
-		$self->render(
+		return $self->render(
 			text   => 'Unable to find config file',
 			format => 'txt',
 		);
 
 	$self->stash("srvip" => $Config->{'server_addr'});
 	if ($machine eq "rescue") {
-		$self->render(
+		return $self->render(
 			template => "boot/rescue.ipxe",
 			format   => 'txt',
 		);
 	} else {
-		my $Node = Node::Manager->get_nodes(
+		my $Nodes = Node::Manager->get_nodes(
 			query => [
 				boot_mac => $machine,
-			]
+			],
+			limit => 1,
 		);
 
-		if (!$Node) {
+		my $Node = @$Nodes[0];
+		if (!ref $Node) {
 			# If the node does not exist, go into bootstrap mode
-			$self->render(
+			return $self->render(
 				template => "boot/bootstrap.ipxe",
 				format   => 'txt',
 			);
@@ -50,7 +51,7 @@ sub lookup_machine {
 				# Change node status
 				$Node->status_id($NodeStatus->next_status);
 				$Node->save() ||
-					$self->render(
+					return $self->render(
 						text   => "Unable to update node [$machine]",
 						status => 500,
 					);
