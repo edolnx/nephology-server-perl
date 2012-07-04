@@ -11,7 +11,7 @@ __PACKAGE__->meta->setup
 (
 	table => 'node_status',
 	columns => [
-		id => {
+		status_id => {
 			type        => 'int',
 			length      => 11,
 			primary_key => 1,

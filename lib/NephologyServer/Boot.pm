@@ -13,7 +13,6 @@ sub lookup_machine {
 	my $self = shift;
 	my $boot_mac = $self->stash('boot_mac');
 
-
 	my $Config = YAML::LoadFile('../nephology.yaml') ||
 		return $self->render(
 			text   => 'Unable to find config file',
@@ -43,11 +42,13 @@ sub lookup_machine {
 			);
 		} else {
 			# Since the node exists, check it's status for for what action to perform
-			my $NodeStatus = NodeStatus::Manager->get_node_status(
+			my $NodeStatuses = NodeStatus::Manager->get_node_status(
 				query => [
-					id => $Node->status_id,
+					status_id => $Node->status_id,
 				]
 			);
+
+			my $NodeStatus = @$NodeStatuses[0];
 			if ($NodeStatus && $NodeStatus->next_status) {
 				# Change node status
 				$Node->status_id($NodeStatus->next_status);
