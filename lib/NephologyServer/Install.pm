@@ -5,7 +5,9 @@ use File::Temp;
 use YAML;
 use Mojo::Base 'Mojolicious::Controller';
 
+use NephologyServer::Config;
 use NephologyServer::DB;
+use NephologyServer::Config;
 use Node::Manager;
 
 
@@ -18,12 +20,11 @@ sub set_rule {
 	my $rule = $self->stash("rule");
 
 
-	my $Config = YAML::LoadFile("../nephology.yaml") ||
-		return $self->render(
-			text   => 'Unable to load config file',
-			format => 'txt',
-		
-		);
+<<<<<<< Updated upstream
+	my $Config = NephologyServer::Config::config($self);
+=======
+	my $Config = NephologyServer::Config::config;
+>>>>>>> Stashed changes
 
 	$self->stash("srv_addr" => $Config->{'server_addr'});
 	$self->stash("mirror_addr" => $Config->{'mirror_addr'});

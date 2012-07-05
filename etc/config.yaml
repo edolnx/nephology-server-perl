@@ -1,0 +1,2 @@
+server_addr: 127.0.0.1 # This is your pxe machine
+mirror_addr: 127.0.0.1 # This is your package mirror
