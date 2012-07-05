@@ -5,7 +5,11 @@ use Mojo::Base 'Mojolicious::Controller';
 use YAML;
 
 use Node::Manager;
+<<<<<<< Updated upstream
+=======
 use NephologyServer::Check;
+>>>>>>> Stashed changes
+use NephologyServer::Config;
 use NodeStatus::Manager;
 
 # Find the boot script, right now only returns the default or rescue iPXE script
@@ -13,11 +17,7 @@ sub lookup_machine {
 	my $self = shift;
 	my $boot_mac = $self->stash('boot_mac');
 
-	my $Config = YAML::LoadFile('../nephology.yaml') ||
-		return $self->render(
-			text   => 'Unable to find config file',
-			format => 'txt',
-		);
+	my $Config = NephologyServer::Config::config($self);
 
 	$self->stash("srvip" => $Config->{'server_addr'});
 	if ($boot_mac eq "rescue") {
