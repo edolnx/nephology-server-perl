@@ -19,12 +19,7 @@ sub set_rule {
 	my $boot_mac = $self->stash("boot_mac");
 	my $rule = $self->stash("rule");
 
-
-<<<<<<< Updated upstream
 	my $Config = NephologyServer::Config::config($self);
-=======
-	my $Config = NephologyServer::Config::config;
->>>>>>> Stashed changes
 
 	$self->stash("srv_addr" => $Config->{'server_addr'});
 	$self->stash("mirror_addr" => $Config->{'mirror_addr'});
