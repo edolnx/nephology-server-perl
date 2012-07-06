@@ -5,10 +5,6 @@ use Mojo::Base 'Mojolicious::Controller';
 use YAML;
 
 use Node::Manager;
-<<<<<<< Updated upstream
-=======
-use NephologyServer::Check;
->>>>>>> Stashed changes
 use NephologyServer::Config;
 use NodeStatus::Manager;
 
