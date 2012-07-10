@@ -46,18 +46,20 @@ sub lookup_machine {
 
 			my $NodeStatus = @$NodeStatuses[0];
 			if ($NodeStatus && $NodeStatus->next_status) {
-				# Change node status
-				$Node->status_id($NodeStatus->next_status);
-				$Node->save() ||
-					return $self->render(
-						text   => "Unable to update node [$boot_mac]",
+				# Verify template exists then change node status
+				if ($self->render(template => 'boot/' . $NodeStatus->template, format => 'txt')) {
+					$Node->status_id($NodeStatus->next_status);
+					$Node->save() ||
+						$self->render(
+							text   => "Unable to update node [$boot_mac]",
+							status => 500,
+						);
+				} else {
+					$self->render(
+						text => "Couldn't find " . $NodeStatus->template . " for [$boot_mac], verify that template exists",
 						status => 500,
 					);
-
-				$self->render(
-					template => 'boot/' . $NodeStatus->template,
-					format   => 'txt',
-				);
+				}
 			} else {
 				# There was no status information found, so abort
 				$self->render(
