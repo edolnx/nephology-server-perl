@@ -65,7 +65,7 @@ CREATE TABLE `node` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `id` (`id`),
   KEY `status_id` (`status_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=148 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 --
 -- Table structure for table `node_status`
