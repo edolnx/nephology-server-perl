@@ -13,13 +13,17 @@ my $mock = Test::MockObject->new();
 $mock->fake_module('Node::Manager',
 	get_nodes => sub { undef });
 
+print "\n===============================================================\n";
+print "Test getting a 404 using a hostname that doesn't match any node\n";
+print "===============================================================\n";
 $t->get_ok('/creds/foo')
   ->status_is(404)
   ->content_is('Node [foo] not found');
 
-#
-# Test succesfully finding a node by hostname
-#
+
+print "\n===============================================================\n";
+print "Test successfully looking up a node by hostname\n";
+print "===============================================================\n";
 my $expected_nodes = [bless({
 		ctime          => 'null',
 		primary_ip     => '127.0.0.1',
@@ -45,11 +49,12 @@ $mock->fake_module('Node::Manager',
 
 $t->get_ok('/creds/peon6860')
   ->status_is(200)
-  ->content_is($expected_json);
+  ->content_is($expected_json, 'got node by hostname');
 
-#
-# Test succesfully finding a node by mac address
-#
+
+print "\n===============================================================\n";
+print "Test successfully looking up a node by mac address\n";
+print "===============================================================\n";
 my $expected_nodes = [bless({
 		ctime          => 'null',
 		primary_ip     => '127.0.0.1',
