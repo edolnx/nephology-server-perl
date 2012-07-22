@@ -7,7 +7,7 @@ use Mojo::Base 'Mojolicious::Controller';
 
 use NephologyServer::Config;
 use NephologyServer::DB;
-use NephologyServer::Config;
+use NephologyServer::Validate;
 use Node::Manager;
 
 
@@ -20,24 +20,18 @@ sub set_rule {
 	my $rule = $self->stash("rule");
 
 	my $Config = NephologyServer::Config::config($self);
+        my $Node = NephologyServer::Validate::validate($self,$boot_mac);
+
+        if($Node == '0') {
+                return $self->render(
+                        text => "Couldn't find $boot_mac",
+                        status => "404"
+                );
+        }
+
 
 	$self->stash("srv_addr" => $Config->{'server_addr'});
 	$self->stash("mirror_addr" => $Config->{'mirror_addr'});
-
-	my $Nodes = Node::Manager->get_nodes(
-		query => [
-			boot_mac => $boot_mac,
-		],
-		limit => 1,
-	);
-
-	my $Node = @$Nodes[0];
-	if (!ref $Node) {
-		return $self->render(
-			text   => "Node [$boot_mac] not found",
-			status => 404,
-		);
-	}
 	$Node->admin_password_enc(crypt($Node->{'admin_password'}, _gen_salt(2)));
 	# Make sure the requested rule is mapped to this machine before returning it
 
@@ -115,20 +109,14 @@ sub install_machine {
 	my $self = shift;
 	my $boot_mac = $self->stash("boot_mac");
 
-	my $Nodes = NephologyServer::Node::Manager->get_node(
-		query => [
-			boot_mac => $boot_mac,
-		],
-		limit => 1,
-	);
+        my $Node = NephologyServer::Validate::validate($self,$boot_mac);
 
-	my $Node = @$Nodes[0];
-	if (!ref $Node) {
-		return $self->render(
-			text => "Node [$boot_mac] not found",
-			status => 404
-		);
-	}
+        if($Node == '0') {
+                return $self->render(
+                        text => "Couldn't find $boot_mac",
+                        status => "404"
+                );
+        }
 
 	my $MapCasteRules = MapCasteRule::Manager->get_map_caste_rules(
 		require_objects => ['caste_rule'],
