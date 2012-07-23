@@ -9,6 +9,7 @@ use NephologyServer::Config;
 use NephologyServer::DB;
 use NephologyServer::Config;
 use Node::Manager;
+use MapCasteRule::Manager;
 
 
 my @salt = ( '.', '/', 0 .. 9, 'A' .. 'Z', 'a' .. 'z' );
@@ -115,7 +116,7 @@ sub install_machine {
 	my $self = shift;
 	my $boot_mac = $self->stash("boot_mac");
 
-	my $Nodes = NephologyServer::Node::Manager->get_node(
+	my $Nodes = Node::Manager->get_nodes(
 		query => [
 			boot_mac => $boot_mac,
 		],
@@ -133,15 +134,15 @@ sub install_machine {
 	my $MapCasteRules = MapCasteRule::Manager->get_map_caste_rules(
 		require_objects => ['caste_rule'],
 		query => [
-			caste_id => 1,
+			caste_id => $Node->caste_id,
 		],
 		sort_by => 't1.priority, t1.caste_rule_id'
 	);
 
-
+	my @columns = qw(id ctime mtime description url template type_id);
 	my @rule_list;
 	for my $MapCasteRule (@$MapCasteRules) {
-		push(@rule_list, $MapCasteRule->caste_rule);
+		push(@rule_list, map {$_ => $MapCasteRule->caste_rule->{$_}} @columns);
 	}
 
 	my $install_list = {
