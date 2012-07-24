@@ -1,11 +1,11 @@
-package NephologyServer::Example;
+package NephologyWebUI::Example;
 
 use strict;
 use Mojo::Base 'Mojolicious::Controller';
 
 sub welcome {
     my $self = shift;
-    $self->redirect_to("/webui");
+    $self->render(template => 'webui/index');
     return 1;
 }
 

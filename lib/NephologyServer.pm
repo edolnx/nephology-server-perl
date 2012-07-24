@@ -3,6 +3,7 @@ package NephologyServer;
 use strict;
 
 use Mojo::Base 'Mojolicious';
+use Mojolicious::Plugin::Mount;
 
 sub startup {
 	my $self = shift;
@@ -11,7 +12,7 @@ sub startup {
 	$r->get('/')->to(
 		controller => 'example',
 		action     => 'welcome',
-	);
+        );
 
 	# Boot
 	$r->get('/boot/:boot_mac')->to(
@@ -34,6 +35,8 @@ sub startup {
 		controller => 'creds',
 		action     => 'machine_creds',
 	);
+
+        $self->plugin(Mount => {'/webui' => 'bin/nephology-webui'});
 }
 
 1;

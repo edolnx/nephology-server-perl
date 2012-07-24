@@ -1,0 +1,4 @@
+% layout 'bootstrap', title 'Welcome to Nephology';
+      <img src="img/nephology-560x587.png" height=587 width=560>
+      <h1>Welcome to Nephology</h1>
+      <p>This was rendered with a layout and template!.<br> All you get is this message and a barebones HTML document.</p>
