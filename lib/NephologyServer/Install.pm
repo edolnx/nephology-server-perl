@@ -33,7 +33,7 @@ sub set_rule {
 
 	$self->stash("srv_addr" => $Config->{'server_addr'});
 	$self->stash("mirror_addr" => $Config->{'mirror_addr'});
-	$Node->admin_password_enc(crypt($Node->{'admin_password'}, _gen_salt(2)));
+	$Node->admin_password(crypt($Node->{'admin_password'}, _gen_salt(2)));
 	# Make sure the requested rule is mapped to this machine before returning it
 
 
@@ -127,10 +127,15 @@ sub install_machine {
 		sort_by => 't1.priority, t1.caste_rule_id'
 	);
 
-	my @columns = qw(id ctime mtime description url template type_id);
+	my @columns = qw(id description url template type_id);
 	my @rule_list;
-	for my $MapCasteRule (@$MapCasteRules) {
-		push(@rule_list, map {$_ => $MapCasteRule->caste_rule->{$_}} @columns);
+
+	for my $MapCasteRule (@$MapCasteRules) {	
+		my $rule_item;
+		for my $c (@columns) {
+			$rule_item->{$c} = $MapCasteRule->caste_rule->{$c};
+		}
+		push @rule_list, $rule_item;
 	}
 
 	my $install_list = {
