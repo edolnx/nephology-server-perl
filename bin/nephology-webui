@@ -1,11 +1,15 @@
 #!/usr/bin/env perl
 use strict;
 
-use Mojo::Base -strict;
-use Mojolicious::Commands;
-
+use Cwd 'abs_path';
 use File::Basename 'dirname';
 use File::Spec;
+
+# Move to the top directory of the server
+chdir(dirname(abs_path($0)) . "/..");
+
+use Mojo::Base -strict;
+use Mojolicious::Commands;
 
 use lib join '/', File::Spec->splitdir(dirname(__FILE__)), 'lib';
 use lib join '/', File::Spec->splitdir(dirname(__FILE__)), '..', 'lib';
