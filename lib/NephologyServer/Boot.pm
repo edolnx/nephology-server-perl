@@ -17,20 +17,21 @@ sub lookup_machine {
 	my $Config = NephologyServer::Config::config($self);
 	my $Node = NephologyServer::Validate::validate($self,$boot_mac);
 
-	if($Node == '0') {
-		return $self->render(
-			text => "Couldn't find $boot_mac",
-			status => "404"
-		);
-	}	
-
 	$self->stash("srvip" => $Config->{'server_addr'});
 	if ($boot_mac eq "rescue") {
 		return $self->render(
-			template => "boot/rescue.ipxe",
-			format   => 'txt',
-		);
+		                     template => "boot/rescue.ipxe",
+		                     format   => 'txt',
+		                    );
 	} else {
+		# See if the node exists, if not - send out the generic boot stuff so we can discover it
+		if($Node == '0') {
+			return $self->render(
+			                     template => "boot/bootstrap.ipxe",
+			                     format   => 'txt',
+			                    );
+		}
+
 		# Since the node exists, check it's status for for what action to perform
 		my $NodeStatuses = NodeStatus::Manager->get_node_status(
 		query => [
