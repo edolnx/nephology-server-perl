@@ -1,2 +1,9 @@
-server_addr: 127.0.0.1 # This is your pxe machine
-mirror_addr: 127.0.0.1 # This is your package mirror
+server_addr: 127.0.0.1
+# server_addr is the IP/hostname of the HTTP server running nephology
+# mirror_addr is the IP/hostname of an HTTP server with an ubuntu mirror
+mirror_addr: 127.0.0.1
+db_name: nephology2
+db_username: nephology
+db_password: 
+db_type: mysql
+db_host: localhost

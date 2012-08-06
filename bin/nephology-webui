@@ -1,18 +1,19 @@
 #!/usr/bin/env perl
 use strict;
 
-use Cwd 'abs_path';
+use Cwd;
 use File::Basename 'dirname';
 use File::Spec;
 
 # Move to the top directory of the server
-chdir(dirname(abs_path($0)) . "/..");
+my $server_base_path = dirname(Cwd::abs_path(__FILE__)) . "/..";
+chdir($server_base_path);
 
 use Mojo::Base -strict;
 use Mojolicious::Commands;
 
-use lib join '/', File::Spec->splitdir(dirname(__FILE__)), 'lib';
-use lib join '/', File::Spec->splitdir(dirname(__FILE__)), '..', 'lib';
+use lib join '/', File::Spec->splitdir(dirname(Cwd::abs_path(__FILE__))), 'lib';
+use lib join '/', File::Spec->splitdir(dirname(Cwd::abs_path(__FILE__))), '..', 'lib';
 
 # Application
 $ENV{MOJO_APP} ||= 'NephologyWebUI';

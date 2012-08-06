@@ -3,20 +3,19 @@ package NephologyServer::Config;
 use strict;
 use Mojo::Base 'Mojolicious::Controller';
 
+use Cwd;
+use File::Basename 'dirname';
 use YAML;
 use Try::Tiny;
 
 sub config {
-	my $self = shift;
 	my $yaml;
-	
-	try { 
-		$yaml = YAML::LoadFile('etc/config.yaml');
+	my $yaml_path = dirname(Cwd::abs_path(__FILE__)) . '/../../etc/config.yaml';
+
+	try {
+		$yaml = YAML::LoadFile($yaml_path);
 	} catch {
-		return $self->render(
-			text   => "Unable to find nephology.yaml",
-			status => 500,
-		);
+		die "Unable to load $yaml_path : " . $_;
 	};
 
 	return $yaml;
