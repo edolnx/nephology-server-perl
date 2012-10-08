@@ -151,7 +151,21 @@ sub install_machine {
 sub discovery {
 	my $self = shift;
 	my $boot_mac = $self->stash("boot_mac");
-	my $json = decode_json($self->req->body);
+	my $Config = NephologyServer::Config::config($self);
+	
+	unless($Config->{'discovery'} eq 'enable') {
+		return $self->render(
+                        text   => "Discovery mode is not enabled",
+                        status => 403
+                );
+	}
+
+	my $json = $self->req->body;
+	my $ohai = decode_json($json);
+
+	open (OHAI, ">>$Config->{'discovery_path'}/$boot_mac");
+	print OHAI $json;
+	close (OHAI);
 
 	my $NodeObject = Node->new(
 		ctime => time,
@@ -166,7 +180,7 @@ sub discovery {
 		domain => '',
 		primary_ip => '',
 		hostname => '',
-		boot_mac => $json->{'macaddress'},
+		boot_mac => $ohai->{'macaddress'},
 	);
 	$NodeObject->save;
 
