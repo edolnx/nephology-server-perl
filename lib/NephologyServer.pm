@@ -36,6 +36,18 @@ sub startup {
 		action     => 'machine_creds',
 	);
 
+	# Notify
+	$r->post('/notify/:boot_mac')->to(
+		controller => 'notify',
+		action     => 'notify',
+	);
+
+	# Discovery
+	$r->post('/install/:boot_mac')->to(
+		controller => 'install',
+		action 	   => 'discovery',
+	);
+
         $self->plugin(Mount => {'/webui' => 'bin/nephology-webui'});
 }
 
