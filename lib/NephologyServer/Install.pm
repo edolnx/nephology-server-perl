@@ -180,7 +180,7 @@ sub discovery {
 		domain => '',
 		primary_ip => '',
 		hostname => '',
-		boot_mac => $ohai->{'macaddress'},
+		boot_mac => $boot_mac,
 	);
 	$NodeObject->save;
 
