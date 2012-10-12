@@ -3,11 +3,13 @@ package NephologyServer::Install;
 use strict;
 use File::Temp;
 use YAML;
+use JSON;
 use Mojo::Base 'Mojolicious::Controller';
 
 use NephologyServer::Config;
 use NephologyServer::DB;
 use NephologyServer::Validate;
+use Node;
 use Node::Manager;
 use MapCasteRule::Manager;
 
@@ -144,6 +146,51 @@ sub install_machine {
 	};
 
 	$self->render(json => $install_list);
+}
+
+sub discovery {
+	my $self = shift;
+	my $boot_mac = $self->stash("boot_mac");
+	my $Config = NephologyServer::Config::config($self);
+	
+	unless($Config->{'discovery'} eq 'enable') {
+		return $self->render(
+                        text   => "Discovery mode is not enabled",
+                        status => 403
+                );
+	}
+
+	my $json = $self->req->body;
+	my $ohai = decode_json($json);
+
+	open (OHAI, ">>$Config->{'discovery_path'}/$boot_mac");
+	print OHAI $json;
+	close (OHAI);
+
+	my $NodeObject = Node->new(
+		ctime => time,
+		mtime => time,
+		asset_tag => '',
+		admin_user =>  '',
+		admin_password => '',
+		ipmi_user => '',
+		ipmi_password => '',
+		caste_id => '0',
+		status_id => '0',
+		domain => '',
+		primary_ip => '',
+		hostname => '',
+		boot_mac => $boot_mac,
+	);
+	$NodeObject->save;
+
+	my @rule_list;
+        my $install_list = {
+                'version_required' => 2,
+                'runlist'          => \@rule_list,
+        };
+
+        $self->render(json => $install_list);
 }
 
 # uses global @salt to construct salt string of requested length
