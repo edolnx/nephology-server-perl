@@ -23,12 +23,18 @@ sub startup {
 	# Install
 	$r->get('/install/:boot_mac/:rule')->to(
 		controller => 'install',
-		action     => 'set_rule',
+		action     => 'get_rule',
 	);
 	$r->get('/install/:boot_mac')->to(
 		controller => 'install',
 		action     => 'install_machine',
 	);
+
+	# Node
+	$r->post('/node/:boot_mac')->to(
+	                                controller => 'node',
+	                                action => 'upsert_machine',
+	                               );
 
 	# Creds
 	$r->get('/creds/:boot_mac')->to(

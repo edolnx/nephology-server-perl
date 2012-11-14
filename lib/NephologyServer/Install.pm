@@ -17,7 +17,7 @@ use MapCasteRule::Manager;
 my @salt = ( '.', '/', 0 .. 9, 'A' .. 'Z', 'a' .. 'z' );
 
 
-sub set_rule {
+sub get_rule {
 	my $self = shift;
 	my $boot_mac = $self->stash("boot_mac");
 	my $rule = $self->stash("rule");
@@ -32,13 +32,18 @@ sub set_rule {
                 );
         }
 
-
+	# Additional variables to stash
 	$self->stash("srv_addr" => $Config->{'server_addr'});
 	$self->stash("mirror_addr" => $Config->{'mirror_addr'});
-	$Node->admin_password(crypt($Node->{'admin_password'}, _gen_salt(2)));
+	#$Node->admin_password(crypt($Node->{'admin_password'}, _gen_salt(2))); # Handled on client side now
+	my @octets = split(/\./,$Node->{'primary_ip'});
+	self->stash("primary_ip_o1" => $octets[0]);
+	self->stash("primary_ip_o2" => $octets[1]);
+	self->stash("primary_ip_o3" => $octets[2]);
+	self->stash("primary_ip_o4" => $octets[3]);
+
+
 	# Make sure the requested rule is mapped to this machine before returning it
-
-
 	my $MapCasteRules = MapCasteRule::Manager->get_map_caste_rules(
 		require_objects => ['caste_rule'],
 		query => [
@@ -146,51 +151,6 @@ sub install_machine {
 	};
 
 	$self->render(json => $install_list);
-}
-
-sub discovery {
-	my $self = shift;
-	my $boot_mac = $self->stash("boot_mac");
-	my $Config = NephologyServer::Config::config($self);
-	
-	unless($Config->{'discovery'} eq 'enable') {
-		return $self->render(
-                        text   => "Discovery mode is not enabled",
-                        status => 403
-                );
-	}
-
-	my $json = $self->req->body;
-	my $ohai = decode_json($json);
-
-	open (OHAI, ">>$Config->{'discovery_path'}/$boot_mac");
-	print OHAI $json;
-	close (OHAI);
-
-	my $NodeObject = Node->new(
-		ctime => time,
-		mtime => time,
-		asset_tag => '',
-		admin_user =>  '',
-		admin_password => '',
-		ipmi_user => '',
-		ipmi_password => '',
-		caste_id => '0',
-		status_id => '0',
-		domain => '',
-		primary_ip => '',
-		hostname => '',
-		boot_mac => $boot_mac,
-	);
-	$NodeObject->save;
-
-	my @rule_list;
-        my $install_list = {
-                'version_required' => 2,
-                'runlist'          => \@rule_list,
-        };
-
-        $self->render(json => $install_list);
 }
 
 # uses global @salt to construct salt string of requested length

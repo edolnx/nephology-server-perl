@@ -51,8 +51,7 @@ sub machine_creds {
 
 	$self->render(
 		json => {
-			map {$_ => $Node->{$_}} @columns
-
+		         map {$_ => $Node->{$_}} @columns,
 	});
 }
 
