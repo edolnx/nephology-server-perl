@@ -44,7 +44,7 @@ sub upsert_machine {
 		ipmi_user => 'root',
 		ipmi_password => _gen_salt(8),
 		caste_id => '1',
-		status_id => '0',
+		status_id => '1',
 		domain => '',
 		primary_ip => $self->tx->{remote_address},
 		hostname => '',
