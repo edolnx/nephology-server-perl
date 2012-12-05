@@ -40,14 +40,7 @@ sub lookup_machine {
 		);
 
 		my $NodeStatus = @$NodeStatuses[0];
-		if ($NodeStatus == 0) {
-                        # This is a discovered node that doesn't have a caste yet, so drop into bootstrap for now
-			return $self->render(
-			                     template => "boot/bootstrap.ipxe",
-			                     format   => 'txt',
-			                    );
-                }
-		elsif ($NodeStatus) {
+                if ($NodeStatus) {
 			# Verify template exists then change node status
 			if ($self->render(template => 'boot/' . $NodeStatus->template, format => 'txt')) {
 				if ($NodeStatus->next_status) {

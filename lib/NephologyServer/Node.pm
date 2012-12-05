@@ -43,7 +43,7 @@ sub upsert_machine {
 		admin_password => _gen_salt(20),
 		ipmi_user => 'root',
 		ipmi_password => _gen_salt(8),
-		caste_id => '0',
+		caste_id => '1',
 		status_id => '0',
 		domain => '',
 		primary_ip => $self->tx->{remote_address},
